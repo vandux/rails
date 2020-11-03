@@ -34,6 +34,8 @@ module ActionController #:nodoc:
             policy = current_content_security_policy
             yield policy
             request.content_security_policy_report_only = policy
+          else
+            request.content_security_policy_report_only = true
           end
 
           unless enabled
