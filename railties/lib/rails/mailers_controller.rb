@@ -12,6 +12,7 @@ class Rails::MailersController < Rails::ApplicationController # :nodoc:
   helper_method :part_query, :locale_query
 
   content_security_policy(false)
+  content_security_policy_report_only(false)
 
   def index
     @previews = ActionMailer::Preview.all

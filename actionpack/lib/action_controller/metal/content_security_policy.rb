@@ -28,9 +28,17 @@ module ActionController #:nodoc:
         end
       end
 
-      def content_security_policy_report_only(report_only = true, **options)
+      def content_security_policy_report_only(enabled = true, **options, &block)
         before_action(options) do
-          request.content_security_policy_report_only = report_only
+          if block_given?
+            policy = current_content_security_policy
+            yield policy
+            request.content_security_policy_report_only = policy
+          end
+
+          unless enabled
+            request.content_security_policy_report_only = nil
+          end
         end
       end
     end

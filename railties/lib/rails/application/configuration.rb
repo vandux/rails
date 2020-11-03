@@ -62,7 +62,7 @@ module Rails
         @enable_dependency_loading               = false
         @read_encrypted_secrets                  = false
         @content_security_policy                 = nil
-        @content_security_policy_report_only     = false
+        @content_security_policy_report_only     = nil
         @content_security_policy_nonce_generator = nil
         @content_security_policy_nonce_directives = nil
         @require_master_key                      = false
@@ -350,6 +350,14 @@ module Rails
           @content_security_policy = ActionDispatch::ContentSecurityPolicy.new(&block)
         else
           @content_security_policy
+        end
+      end
+
+      def content_security_policy_report_only(&block)
+        if block_given?
+          @content_security_policy_report_only = ActionDispatch::ContentSecurityPolicy.new(&block)
+        else
+          @content_security_policy_report_only
         end
       end
 
