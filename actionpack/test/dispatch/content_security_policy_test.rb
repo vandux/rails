@@ -359,7 +359,7 @@ class ContentSecurityPolicyIntegrationTest < ActionDispatch::IntegrationTest
       p.default_src "https://false.example.com"
     end
 
-    content_security_policy only: :report_only do |p|
+    content_security_policy only: [:report_only, :report_only_block] do |p|
       p.report_uri "/violations"
     end
 
@@ -377,6 +377,10 @@ class ContentSecurityPolicyIntegrationTest < ActionDispatch::IntegrationTest
 
     content_security_policy_report_only only: :report_only
 
+    content_security_policy_report_only only: :report_only_block do |p|
+      p.default_src "https://true.example.com"
+    end
+
     def index
       head :ok
     end
@@ -390,6 +394,10 @@ class ContentSecurityPolicyIntegrationTest < ActionDispatch::IntegrationTest
     end
 
     def report_only
+      head :ok
+    end
+
+    def report_only_block
       head :ok
     end
 
@@ -418,6 +426,7 @@ class ContentSecurityPolicyIntegrationTest < ActionDispatch::IntegrationTest
       get "/inline", to: "policy#inline"
       get "/conditional", to: "policy#conditional"
       get "/report-only", to: "policy#report_only"
+      get "/report-only-block", to: "policy#report_only_block"
       get "/script-src", to: "policy#script_src"
       get "/style-src", to: "policy#style_src"
       get "/no-policy", to: "policy#no_policy"
@@ -473,6 +482,14 @@ class ContentSecurityPolicyIntegrationTest < ActionDispatch::IntegrationTest
   def test_generates_report_only_content_security_policy
     get "/report-only"
     assert_policy "default-src 'self'; report-uri /violations", report_only: true
+  end
+
+  def test_generates_report_only_content_security_policy
+    get "/report-only-block"
+    assert_response :success
+
+    assert_equal "default-src 'self'; report-uri /violations", response.headers["Content-Security-Policy"]
+    assert_equal "default-src https://true.example.com; report-uri /violations", response.headers["Content-Security-Policy-Report-Only"]
   end
 
   def test_adds_nonce_to_script_src_content_security_policy
