@@ -38,7 +38,7 @@ module ActionDispatch #:nodoc:
 
       private
         def determine_report_only_policy(request)
-          return if request.content_security_policy_report_only.is_a?(TrueClass)
+          return if request.content_security_policy_report_only == true
 
           request.content_security_policy_report_only
         end
@@ -50,7 +50,7 @@ module ActionDispatch #:nodoc:
         end
 
         def header_name(request)
-          if request.content_security_policy_report_only.is_a?(TrueClass)
+          if request.content_security_policy_report_only == true
             POLICY_REPORT_ONLY
           else
             POLICY

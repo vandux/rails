@@ -102,7 +102,7 @@ module ApplicationTests
       assert_policy_absent POLICY_REPORT_ONLY
     end
 
-    test "global report only content security policy in an initializer with boolean" do
+    test "global content security policy report only in an initializer with boolean" do
       controller :pages, <<-RUBY
         class PagesController < ApplicationController
           def index
@@ -134,7 +134,7 @@ module ApplicationTests
       assert_policy_absent POLICY
     end
 
-    test "global report only content security policy in an initializer with block" do
+    test "global content security policy report only in an initializer with block" do
       controller :pages, <<-RUBY
         class PagesController < ApplicationController
           def index
@@ -164,7 +164,7 @@ module ApplicationTests
       assert_policy_absent POLICY
     end
 
-    test "global content security policy and report only content security policy in an initializer" do
+    test "global content security policy and content security policy report only in an initializer" do
       controller :pages, <<-RUBY
         class PagesController < ApplicationController
           def index
@@ -271,7 +271,39 @@ module ApplicationTests
     test "override content security policy to report only in a controller" do
       controller :pages, <<-RUBY
         class PagesController < ApplicationController
-          content_security_policy do |p|
+          content_security_policy_report_only
+
+          def index
+            render html: "<h1>Welcome to Rails!</h1>"
+          end
+        end
+      RUBY
+
+      app_file "config/initializers/content_security_policy.rb", <<-RUBY
+        Rails.application.config.content_security_policy do |p|
+          p.default_src "https://example.com"
+        end
+      RUBY
+
+      app_file "config/routes.rb", <<-RUBY
+        Rails.application.routes.draw do
+          root to: "pages#index"
+        end
+      RUBY
+
+      app("development")
+
+      get "/"
+
+      assert_equal 200, last_response.status
+      assert_policy_present "default-src https://example.com", report_only: true
+      assert_policy_absent POLICY
+    end
+
+    test "set content security policy report only in a controller" do
+      controller :pages, <<-RUBY
+        class PagesController < ApplicationController
+          content_security_policy_report_only do |p|
             p.default_src "https://example.com"
           end
 
@@ -282,7 +314,6 @@ module ApplicationTests
       RUBY
 
       app_file "config/initializers/content_security_policy.rb", <<-RUBY
-        Rails.application.config.content_security_policy_report_only = true
       RUBY
 
       app_file "config/routes.rb", <<-RUBY
@@ -336,6 +367,48 @@ module ApplicationTests
       assert_equal 200, last_response.status
       assert_policy_present "default-src https://example.com", report_only: true
       assert_policy_present "default-src https://host.com"
+    end
+
+    test "override content security policy and content security policy report only in a controller" do
+      controller :pages, <<-RUBY
+        class PagesController < ApplicationController
+          content_security_policy do |p|
+            p.default_src "https://example.com", :https
+          end
+
+          content_security_policy_report_only do |p|
+            p.default_src "https://example.com", :https
+            p.script_src  "https://example.com", :https
+            p.style_src   "https://example.com", :https
+          end
+
+          def index
+            render html: "<h1>Welcome to Rails!</h1>"
+          end
+        end
+      RUBY
+
+      app_file "config/initializers/content_security_policy.rb", <<-RUBY
+        Rails.application.config.content_security_policy do |p|
+          p.default_src "https://host.com"
+        end
+
+        Rails.application.config.content_security_policy_report_only = true
+      RUBY
+
+      app_file "config/routes.rb", <<-RUBY
+        Rails.application.routes.draw do
+          root to: "pages#index"
+        end
+      RUBY
+
+      app("development")
+
+      get "/"
+
+      assert_equal 200, last_response.status
+      assert_policy_present "default-src https://example.com https:; script-src https://example.com https:; style-src https://example.com https:", report_only: true
+      assert_policy_present "default-src https://example.com https:"
     end
 
     test "global content security policy added to rack app" do

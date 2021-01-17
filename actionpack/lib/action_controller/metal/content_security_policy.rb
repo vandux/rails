@@ -31,7 +31,12 @@ module ActionController #:nodoc:
       def content_security_policy_report_only(enabled = true, **options, &block)
         before_action(options) do
           if block_given?
-            policy = current_content_security_policy
+            if current_content_security_policy_report_only == true
+              policy = ActionDispatch::ContentSecurityPolicy.new
+            else
+              policy = current_content_security_policy_report_only
+            end
+
             yield policy
             request.content_security_policy_report_only = policy
           else
@@ -56,6 +61,10 @@ module ActionController #:nodoc:
 
       def current_content_security_policy
         request.content_security_policy&.clone || ActionDispatch::ContentSecurityPolicy.new
+      end
+
+      def current_content_security_policy_report_only
+        request.content_security_policy_report_only&.clone || ActionDispatch::ContentSecurityPolicy.new
       end
   end
 end
