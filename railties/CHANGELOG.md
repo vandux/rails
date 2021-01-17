@@ -1,3 +1,14 @@
+## Unreleased
+
+*   Change `content_security_policy_report_only` configuration to support
+    blocks, similar to `content_security_policy`.
+
+    The changes are backwards compatible.
+
+    Fixes #40452
+
+    *Shaun Russell*
+
 *   Add benchmark method that can be called from anywhere.
 
     This method is used as a quick way to measure & log the speed of some code.
