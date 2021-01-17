@@ -1137,10 +1137,23 @@ end
 ```
 
 ```ruby
-# Controller override
+# Controller override to promote content-security-policy policy to report-only
 class PostsController < ApplicationController
   content_security_policy_report_only only: :index
 end
+
+# Controller override to override content-security-policy-report-only header with block
+class PostsController < ApplicationController
+  content_security_policy_report_only only: :index do |policy|
+    ...
+  end
+end
+
+# Controller override to disable content-security-policy-report-only
+class PostsController < ApplicationController
+  content_security_policy_report_only(false, only: :index)
+end
+
 ```
 
 You can enable automatic nonce generation:
