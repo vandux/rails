@@ -95,10 +95,10 @@ current version of Ruby installed:
 
 ```bash
 $ ruby --version
-ruby 2.5.0
+ruby 2.7.0
 ```
 
-Rails requires Ruby version 2.5.0 or later. If the version number returned is
+Rails requires Ruby version 2.7.0 or later. If the version number returned is
 less than that number (such as 2.3.7, or 1.8.7), you'll need to install a fresh copy of Ruby.
 
 To install Rails on Windows, you'll first need to install [Ruby Installer](https://rubyinstaller.org/).
@@ -1812,6 +1812,7 @@ In `app/models/article.rb`:
 ```ruby
 class Article < ApplicationRecord
   include Visible
+
   has_many :comments
 
   validates :title, presence: true
@@ -1824,6 +1825,7 @@ and in `app/models/comment.rb`:
 ```ruby
 class Comment < ApplicationRecord
   include Visible
+
   belongs_to :article
 end
 ```
@@ -1861,9 +1863,11 @@ Our blog has <%= Article.public_count %> articles and counting!
 
 <ul>
   <% @articles.each do |article| %>
-    <li>
-      <%= link_to article.title, article %>
-    </li>
+    <% unless article.archived? %>
+      <li>
+        <%= link_to article.title, article %>
+      </li>
+    <% end %>
   <% end %>
 </ul>
 
@@ -1966,7 +1970,7 @@ class CommentsController < ApplicationController
 
   private
     def comment_params
-      params.require(:comment).permit(:commenter, :body)
+      params.require(:comment).permit(:commenter, :body, :status)
     end
 end
 ```

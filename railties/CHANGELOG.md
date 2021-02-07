@@ -1,5 +1,3 @@
-## Unreleased
-
 *   Change `content_security_policy_report_only` configuration to support
     blocks, similar to `content_security_policy`.
 
@@ -8,6 +6,10 @@
     Fixes #40452
 
     *Shaun Russell*
+
+*   Change default branch for new Rails projects and plugins to `main`.
+
+    *Prateek Choudhary*
 
 *   Add benchmark method that can be called from anywhere.
 

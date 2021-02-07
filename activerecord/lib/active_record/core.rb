@@ -155,6 +155,19 @@ module ActiveRecord
 
       mattr_accessor :legacy_connection_handling, instance_writer: false, default: true
 
+      mattr_accessor :application_record_class, instance_accessor: false, default: nil
+
+      def self.application_record_class? # :nodoc:
+        if Base.application_record_class
+          self == Base.application_record_class
+        else
+          if defined?(ApplicationRecord) && self == ApplicationRecord
+            Base.application_record_class = self
+            true
+          end
+        end
+      end
+
       self.filter_attributes = []
 
       def self.connection_handler
@@ -196,7 +209,7 @@ module ActiveRecord
         else
           connected_to_stack.reverse_each do |hash|
             return hash[:role] if hash[:role] && hash[:klasses].include?(Base)
-            return hash[:role] if hash[:role] && hash[:klasses].include?(abstract_base_class)
+            return hash[:role] if hash[:role] && hash[:klasses].include?(connection_classes)
           end
 
           default_role
@@ -215,7 +228,7 @@ module ActiveRecord
       def self.current_shard
         connected_to_stack.reverse_each do |hash|
           return hash[:shard] if hash[:shard] && hash[:klasses].include?(Base)
-          return hash[:shard] if hash[:shard] && hash[:klasses].include?(abstract_base_class)
+          return hash[:shard] if hash[:shard] && hash[:klasses].include?(connection_classes)
         end
 
         default_shard
@@ -237,7 +250,7 @@ module ActiveRecord
         else
           connected_to_stack.reverse_each do |hash|
             return hash[:prevent_writes] if !hash[:prevent_writes].nil? && hash[:klasses].include?(Base)
-            return hash[:prevent_writes] if !hash[:prevent_writes].nil? && hash[:klasses].include?(abstract_base_class)
+            return hash[:prevent_writes] if !hash[:prevent_writes].nil? && hash[:klasses].include?(connection_classes)
           end
 
           false
@@ -254,11 +267,23 @@ module ActiveRecord
         end
       end
 
-      def self.abstract_base_class # :nodoc:
+      def self.connection_class=(b) # :nodoc:
+        @connection_class = b
+      end
+
+      def self.connection_class # :nodoc
+        @connection_class ||= false
+      end
+
+      def self.connection_class? # :nodoc:
+        self.connection_class
+      end
+
+      def self.connection_classes # :nodoc:
         klass = self
 
         until klass == Base
-          break if klass.abstract_class?
+          break if klass.connection_class?
           klass = klass.superclass
         end
 
@@ -266,11 +291,11 @@ module ActiveRecord
       end
 
       def self.allow_unsafe_raw_sql # :nodoc:
-        ActiveSupport::Deprecation.warn("ActiveRecord::Base.allow_unsafe_raw_sql is deprecated and will be removed in Rails 6.2")
+        ActiveSupport::Deprecation.warn("ActiveRecord::Base.allow_unsafe_raw_sql is deprecated and will be removed in Rails 7.0")
       end
 
       def self.allow_unsafe_raw_sql=(value) # :nodoc:
-        ActiveSupport::Deprecation.warn("ActiveRecord::Base.allow_unsafe_raw_sql= is deprecated and will be removed in Rails 6.2")
+        ActiveSupport::Deprecation.warn("ActiveRecord::Base.allow_unsafe_raw_sql= is deprecated and will be removed in Rails 7.0")
       end
 
       self.default_connection_handler = ConnectionAdapters::ConnectionHandler.new
@@ -420,10 +445,6 @@ module ActiveRecord
       end
 
       # Returns an instance of <tt>Arel::Table</tt> loaded with the current table name.
-      #
-      #   class Post < ActiveRecord::Base
-      #     scope :published_and_commented, -> { published.and(arel_table[:comments_count].gt(0)) }
-      #   end
       def arel_table # :nodoc:
         @arel_table ||= Arel::Table.new(table_name, klass: self)
       end
@@ -651,11 +672,19 @@ module ActiveRecord
     # if the record tries to lazily load an association.
     #
     #   user = User.first
-    #   user.strict_loading!
-    #   user.comments.to_a
+    #   user.strict_loading! # => true
+    #   user.comments
     #   => ActiveRecord::StrictLoadingViolationError
-    def strict_loading!
-      @strict_loading = true
+    #
+    # strict_loading! accepts a boolean argument to specify whether
+    # to enable or disable strict loading mode.
+    #
+    #   user = User.first
+    #   user.strict_loading!(false) # => false
+    #   user.comments
+    #   => #<ActiveRecord::Associations::CollectionProxy>
+    def strict_loading!(value = true)
+      @strict_loading = value
     end
 
     # Marks this record as read only.
